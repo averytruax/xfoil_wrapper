@@ -81,9 +81,16 @@ def std_atm(altitude: float, units: str, print_output: bool = False) -> dict:
     mu_inf = (Beta * T_inf ** 1.5) / (Suth + T_inf)
     
     if print_output:
-        print(f'The freestream Pressure is: {P_inf:.6f} Pa')
-        print(f'The freestream Temperature is: {T_inf:.6f} K')
-        print(f'The freestream Density is: {rho_inf:.6f} kg/m^3')
-        print(f'The freestream Dynamic Viscosity is: {mu_inf:.6f} Ns/m^2')
+        print("Freesream Conditions:")
+        print(f'\tPressure:     {P_inf:.6f} Pa')
+        print(f'\tTemperature:  {T_inf:.6f} K')
+        print(f'\tDensity:      {rho_inf:.6f} kg/m^3')
+        print(f'\tViscosity:    {mu_inf:.6f} Ns/m^2')
     
     return {'Pressure' : P_inf , 'Temperature' : T_inf , 'Density' : rho_inf , 'Viscosity' : mu_inf}
+
+
+if __name__ == "__main__":
+    alt = 10
+    units = 'km'
+    std_atm(altitude=alt, units=units, print_output=True)
