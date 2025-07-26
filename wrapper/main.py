@@ -19,6 +19,9 @@ altitude = 30000  #Altitude for the analysis (specify units as third argument
 
 if __name__ == "__main__":
 
+    # Have this file be the one that is run, but have it reference files
+    # that are in a job_configuration directory
+
     # Create the airfoil and export it as a dat file
     upper_coords = gf.cst_xy(airfoil_desc['cst_upper'],
                              airfoil_desc['yte'],

@@ -23,7 +23,6 @@ class RunnerAirfoil(BaseModel):
         airfoil.airfoil_cst_coefficients = {
             'cst_upper' : np.array([0.102220,0.15578,0.099851,0.069602,0.4,-0.15,1e-06,0.35]),
             'cst_lower' : np.array([-0.22348,-0.28056,-0.11018,-0.13087,-0.28754,-0.25265,-0.14652,-0.35407]),
-
         }
 
         airfoil.airfoil_settings = {
@@ -39,3 +38,5 @@ class RunnerAirfoil(BaseModel):
             'target_cd0_' : 0.02,
             'target_cm0' : 0.01,
         }
+
+        return airfoil
