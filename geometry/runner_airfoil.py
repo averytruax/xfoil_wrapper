@@ -3,29 +3,25 @@ from pydantic import BaseModel
 
 """Script containing the geometric information about the airfoils and the optimization parameters"""
 class RunnerAirfoil(BaseModel):
-    def __init__(self):
 
-        self.tag: str
-        self.airfoil_cst_coefficients: dict = None
-        self.settings: dict = None
-        self.optimization_parameters: dict = None
-
-        return
-
+    tag: str = 'base'
+    airfoil_cst_coefficients: dict = None
+    settings: dict = None
+    optimization_parameters: dict = None
 
     @classmethod
     def test_airfoil(cls):
 
         airfoil = cls()
 
-        airfoil.settings = "test_airfoil"
+        airfoil.tag = "test_airfoil"
 
         airfoil.airfoil_cst_coefficients = {
-            'cst_upper' : np.array([0.102220,0.15578,0.099851,0.069602,0.4,-0.15,1e-06,0.35]),
-            'cst_lower' : np.array([-0.22348,-0.28056,-0.11018,-0.13087,-0.28754,-0.25265,-0.14652,-0.35407]),
+            'upper' : np.array([0.102220,0.15578,0.099851,0.069602,0.4,-0.15,1e-06,0.35]),
+            'lower' : np.array([-0.22348,-0.28056,-0.11018,-0.13087,-0.28754,-0.25265,-0.14652,-0.35407]),
         }
 
-        airfoil.airfoil_settings = {
+        airfoil.settings = {
             'yte'       : 0.0,
             'type'      : 'round',
         }
