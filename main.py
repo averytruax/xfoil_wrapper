@@ -36,9 +36,8 @@ if __name__ == "__main__":
 
     airfoil = RunnerAirfoil.test_airfoil()
 
-    dat_file = "wrapper/wrapper_airfoil.dat"
 
-    obj.create_and_write_airfoil_file(airfoil,dat_file)
+    obj.create_and_write_airfoil_file(airfoil)
 
 
 

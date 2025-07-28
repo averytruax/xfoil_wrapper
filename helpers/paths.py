@@ -6,12 +6,12 @@ class _Paths:
     ROOT_DIR: Path = Path(__file__).resolve().parent.parent
 
     @classmethod
-    def get_geometry_path(cls) -> Path:
+    def geometry(cls) -> Path:
         """Example: Return the geometry folder path."""
         return cls.ROOT_DIR / "geometry"
 
     @classmethod
-    def get_outputs_path(cls) -> Path:
+    def outputs(cls) -> Path:
         """Example: Return the outputs folder path."""
         return cls.ROOT_DIR / "outputs"
 

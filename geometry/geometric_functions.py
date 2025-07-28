@@ -1,9 +1,10 @@
 import numpy as np
-from typing import Literal
+from typing import Literal, Optional
 from scipy.special import factorial
 from pydantic import BaseModel
 import os
 from geometry.runner_airfoil import RunnerAirfoil
+from helpers.paths import _Paths
 
 
 class AirfoilFunctions(BaseModel):
@@ -43,7 +44,7 @@ class AirfoilFunctions(BaseModel):
     def create_and_write_airfoil_file(
         self,
         airfoil: RunnerAirfoil,
-        file_name: str,
+        file_name: Optional[str] = 'wrapper_airfoil.dat',
         ) -> None:
 
 
@@ -57,7 +58,7 @@ class AirfoilFunctions(BaseModel):
         upper_coords = self.cst_xy(upper_cst,yte,af_type)
         lower_coords = self.cst_xy(lower_cst,yte,af_type)
 
-        self.write_dat_file(file_name,upper_coords,lower_coords)
+        self.write_dat_file(upper_coords,lower_coords,file_name)
 
         return
 
@@ -120,9 +121,9 @@ class AirfoilFunctions(BaseModel):
 
     def write_dat_file(
         self,
-        filename: str,
         xy_upper: np.ndarray,
-        xy_lower: np.ndarray
+        xy_lower: np.ndarray,
+        file_name: Optional[str] = 'wrapper_airfoil.dat',
         ) -> None:
         '''
         Inputs:
@@ -133,13 +134,19 @@ class AirfoilFunctions(BaseModel):
         Outputs:
             None
         '''
-        if os.path.exists(filename):
-            os.remove(filename)
+
+        outputs_dir = _Paths.outputs()
+        print(outputs_dir)
+        print(file_name)
+        full_path = outputs_dir / file_name
+
+        if os.path.exists(full_path):
+            os.remove(full_path)
         upper_surface = xy_upper[::-1][0:-1]
         lower_surface = xy_lower[:]
         all_coords = np.concatenate((upper_surface, lower_surface))
-        with open(filename , 'w') as file:
-            file.write(f'{filename}\n')
+        with open(full_path , 'w') as file:
+            file.write(f'{full_path}\n')
             for i in range(len(all_coords)):
                 file.write(f'\t{all_coords[i][0]:.5f} \t{all_coords[i][1]:.5f}\n')
 
