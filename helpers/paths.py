@@ -1,7 +1,6 @@
 from pathlib import Path
-from pydantic import BaseModel
 
-class _Paths(BaseModel):
+class _Paths:
 
     # Line needs to change if file location changes
     ROOT_DIR: Path = Path(__file__).resolve().parent.parent
