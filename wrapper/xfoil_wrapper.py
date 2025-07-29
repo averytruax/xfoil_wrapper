@@ -18,7 +18,7 @@ class XfoilWrapper:
         self.operating_conds_set = False
         self.first_iter_done = False
 
-    def start_xfoil(self):
+    def start_xfoil(self) -> None:
         """Starts Xfoil as a persistent process."""
         if self.process is None or self.process.poll() is not None:
             self.process = sp.Popen(
@@ -30,6 +30,8 @@ class XfoilWrapper:
                 text=True,
                 creationflags=0,
             )
+
+        return
 
     def send_command(self, command: str):
         """Sends a command to XFOIL while ensuring the process is still alive."""
@@ -46,13 +48,15 @@ class XfoilWrapper:
         else:
             raise RuntimeError("XFOIL process has unexpectedly terminated.")
 
-    def disable_graphics(self):
+        return
+
+    def disable_graphics(self) -> None:
         """Sends a command to disable the graphics output of xfoil"""
         self.send_command('PLOP')
         self.send_command('G\n')
-        return None
+        return
 
-    def is_busy(self):
+    def is_busy(self) -> bool:
         """Checks if Xfoil is still processing the last command."""
         if self.process:
             return self.process.poll() is None
@@ -64,7 +68,7 @@ class XfoilWrapper:
         self.process = None
         return output , stderr
 
-    def load_airfoil(self):
+    def load_airfoil(self) -> None:
         """Loads an airfoil `.dat` file into XFOIL."""
         wrapper_dir = PATHS.wrapper()
         relative_airfoil_path = os.path.relpath(self.wrapper_airfoil_file, wrapper_dir)
@@ -77,7 +81,9 @@ class XfoilWrapper:
         if len(dat_file_info) > 150:
             self.send_command("PANE")
 
-    def set_oper(self, Re: float, M: float):
+        return
+
+    def set_oper(self, Re: float, M: float) -> None:
         """Enters operating mode in XFOIL."""
         self.send_command("OPER")
         self.send_command("iter 1000")   # Set iteration limit
@@ -89,7 +95,9 @@ class XfoilWrapper:
             self.send_command("iter 1000")   # Set iteration limit
         self.operating_conds_set = True
 
-    def set_pacc(self):
+        return
+
+    def set_pacc(self) -> None:
         """Enables polar accumulation output to a file."""
         if os.path.exists('outputs/'+self.output_file) and self.first_pacc:
             if self.print_commands:
@@ -105,18 +113,20 @@ class XfoilWrapper:
             self.send_command(f"PACC\n{'outputs/'+self.output_file}\n")
             self.is_pacc = True
 
-    def unset_pacc(self):
+        return
+
+    def unset_pacc(self) -> None:
         """Disables polar accumulation."""
         if self.is_pacc:
             self.send_command("PACC")
             self.is_pacc = False
-        return None
+        return
 
-    def quit_xfoil(self):
+    def quit_xfoil(self) -> None:
         """Sends command to quit Xfoil"""
         self.send_command("\n\n\nquit")
         self.process = None
-        return None
+        return
 
     def get_airfoil_polar_data(self, Re: float, M: float):
         """Finds maximum lift coefficient (Cl_max)."""
