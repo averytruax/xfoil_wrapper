@@ -1,5 +1,6 @@
 # Import Scripts to be used
 from wrapper.std_atm import std_atm
+from wrapper.xfoil_wrapper import XfoilWrapper
 from geometry.geometric_functions import AirfoilFunctions
 from geometry.runner_airfoil import RunnerAirfoil
 from math import sqrt
@@ -44,15 +45,10 @@ if __name__ == "__main__":
     atm_data = std_atm(altitude,'ft')
     a = sqrt(1.4 * 287 * atm_data['Temperature'])
     Re = (atm_data['Density'] * M * a) / atm_data['Viscosity'] # 1/m
-    print(M*a)
-    print(atm_data['Density'])
-    print(atm_data['Temperature'])
-    print(atm_data['Viscosity'])
-    print(Re)
 
-    # run = XfoilWrapper()
+    run = XfoilWrapper(print_comms=True)
 
-    # run.test_this_thang(Re,M)
+    run.test_this_thang(Re,M)
 
     # polar = run.get_airfoil_polar_data(Re,M)
 

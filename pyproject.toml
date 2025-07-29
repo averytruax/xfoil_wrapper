@@ -6,7 +6,8 @@ authors = ["Your Name <you@example.com>"]
 packages = [
     { include = "geometry" },
     { include = "wrapper" },
-    { include = "outputs" }
+    { include = "outputs" },
+    { include = "helpers" }
 ]
 
 [tool.poetry.dependencies]

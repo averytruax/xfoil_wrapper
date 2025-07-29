@@ -1,13 +1,17 @@
 import subprocess as sp
 import pandas as pd
 from time import sleep
+from pathlib import Path
+from helpers.paths import _Paths
 import os
+
+PATHS = _Paths()
 
 class XfoilWrapper:
     def __init__(self , print_comms: bool = False):
         self.print_commands = print_comms
-        self.output_file = "xfoil_output"
-        self.wrapper_airfoil_file = "wrapper_airfoil.dat"
+        self.output_file = PATHS.outputs() / "xfoil_output.txt"
+        self.wrapper_airfoil_file = PATHS.outputs() / 'wrapper_airfoil.dat'
         self.process = None  # Persistent Xfoil process
         self.is_pacc = False
         self.first_pacc = True
@@ -29,17 +33,19 @@ class XfoilWrapper:
 
     def send_command(self, command: str):
         """Sends a command to XFOIL while ensuring the process is still alive."""
+
+        outputs_path = PATHS.outputs()
         if self.process and self.process.poll() is None:  # Ensure XFOIL is running
             if self.print_commands:
                 print(f"Sending command: {command}")  # Debugging
-            with open("xfoil_commands.log", "a") as log_file:
+            with open(outputs_path / "xfoil_commands.log", "a") as log_file:
                 log_file.write(command + "\n")  # Log the command
             self.process.stdin.write(command + "\n")
             self.process.stdin.flush()
             sleep(0.15)
         else:
             raise RuntimeError("XFOIL process has unexpectedly terminated.")
-        
+
     def disable_graphics(self):
         """Sends a command to disable the graphics output of xfoil"""
         self.send_command('PLOP')
@@ -60,11 +66,12 @@ class XfoilWrapper:
 
     def load_airfoil(self):
         """Loads an airfoil `.dat` file into XFOIL."""
-        self.start_xfoil()
+        wrapper_dir = PATHS.wrapper()
+        relative_airfoil_path = os.path.relpath(self.wrapper_airfoil_file, wrapper_dir)
         dat_file_info = pd.read_csv(self.wrapper_airfoil_file, skiprows=[0], delimiter='\t', skipinitialspace=True, header=None).iloc[:, 1:]
-        
+
         # Load the airfoil
-        self.send_command(f"load {self.wrapper_airfoil_file}")
+        self.send_command(f"load {relative_airfoil_path}")
 
         # If airfoil has more than 150 points, apply paneling
         if len(dat_file_info) > 150:
@@ -90,7 +97,7 @@ class XfoilWrapper:
             os.remove('outputs/'+self.output_file)
             self.first_pacc = False  # Only remove the file on the first call
             sleep(0.05)
-        
+
         if self.first_iter_done:
             self.send_command(f"PACC\n{'outputs/'+self.output_file}\ny\n")
             self.is_pacc = True
@@ -104,7 +111,7 @@ class XfoilWrapper:
             self.send_command("PACC")
             self.is_pacc = False
         return None
-    
+
     def quit_xfoil(self):
         """Sends command to quit Xfoil"""
         self.send_command("\n\n\nquit")
@@ -170,7 +177,7 @@ class XfoilWrapper:
         #                 time_slept += 0.1
         #             else:
         #                 file_updated = True
-            
+
         #     polar_data['alpha'].append(alpha)
         #     polar_data['cl'].append(float(line_info[1]))
         #     polar_data['cd'].append(float(line_info[2]))
@@ -178,14 +185,14 @@ class XfoilWrapper:
         #     if polar_data['cl'][-1] < cl_old and cl_old > 0 and alpha > 7:
         #         cl_max_found = True
         #         polar_data['xtr_top'] = float(line_info[4])
-        #         polar_data['xtr_bot'] = float(line_info[5])                
+        #         polar_data['xtr_bot'] = float(line_info[5])
         #     cl_old = polar_data['cl'][-1]
         #     alpha_old = alpha
         #     alpha += ainc
         #     self.first_iter_done = True
         #=================================================================
         """
-        
+
         cl_max_found = False
         cl_peak = -float('inf')
         alpha_peak = None
@@ -254,7 +261,7 @@ class XfoilWrapper:
                             polar_data['xtr_top'] = float(line_info[4])
                             polar_data['xtr_bot'] = float(line_info[5])
                             break
-                        
+
 
                 alpha_old = float(line_info[0])
                 alpha += alpha_step
@@ -262,24 +269,25 @@ class XfoilWrapper:
 
         return polar_data
 
-            
+
     def test_this_thang(self, Re , M):
         alpha = 0
         alpha_step = 1
         ainc = alpha_step/20
+        self.start_xfoil()
         self.load_airfoil()
-        self.disable_graphics()
-        self.set_oper(Re,M)
-        self.send_command("AS")  # Set angle of attack
-        self.send_command(f'{alpha}')
-        self.send_command(f'{alpha + alpha_step - ainc}')
-        self.send_command(f'{ainc}')
-        sleep(5)
-        
-        output , err= self.read_output()
-        print(output)
-        self.load_airfoil()
-        output , err = self.read_output()
-        print(output)
-        
+        # self.disable_graphics()
+        # self.set_oper(Re,M)
+        # self.send_command("AS")  # Set angle of attack
+        # self.send_command(f'{alpha}')
+        # self.send_command(f'{alpha + alpha_step - ainc}')
+        # self.send_command(f'{ainc}')
+        # sleep(5)
+
+        # output , err= self.read_output()
+        # # print(output)
+        # self.load_airfoil()
+        # output , err = self.read_output()
+        # print(output)
+
 

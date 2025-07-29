@@ -68,7 +68,7 @@ class AirfoilFunctions(BaseModel):
         yte: float,
         airfoil_type: Literal['round', 'elliptic', 'biconvex', 'sears_haack',
             'low_drag', 'cone_wedge', 'rectangle_duct'] = 'round',
-        num_points: int = 200
+        num_points: int = 160
         ) -> np.array:
         """
         Converts CST coefficients to XY coordinates for an airfoil.
