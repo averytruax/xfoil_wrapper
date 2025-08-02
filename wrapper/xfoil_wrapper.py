@@ -7,8 +7,11 @@ import os
 
 PATHS = _Paths()
 
+# TODO: Have the 'base' functions like start, send_command, load, etc. in their own class
+# This would neccesitate anothrer class that builds standard processes off of the base methods
+
 class XfoilWrapper:
-    
+
     def __init__(self , print_comms: bool = False):
         self.print_commands = print_comms
         self.output_file = PATHS.outputs() / "xfoil_output.txt"
@@ -58,12 +61,6 @@ class XfoilWrapper:
         self.send_command('PLOP')
         self.send_command('G\n')
         return
-
-    def is_busy(self) -> bool:
-        """Checks if Xfoil is still processing the last command."""
-        if self.process:
-            return self.process.poll() is None
-        return False
 
     def read_output(self):
         """Stops the subprocess and reads the output"""

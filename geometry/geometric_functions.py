@@ -49,8 +49,8 @@ class AirfoilFunctions(BaseModel):
 
 
         # unpack
-        upper_cst = airfoil.airfoil_cst_coefficients["upper"]
-        lower_cst = airfoil.airfoil_cst_coefficients["lower"]
+        upper_cst = airfoil.cst_coefficients["upper"]
+        lower_cst = airfoil.cst_coefficients["lower"]
         yte = airfoil.settings['yte']
         af_type = airfoil.settings['type']
 
