@@ -12,7 +12,7 @@ class _Paths:
 
     @classmethod
     def outputs(cls) -> Path:
-        return cls.ROOT_DIR / "outputs"
+        return cls.wrapper() / "outputs"
 
     @classmethod
     def wrapper(cls) -> Path:

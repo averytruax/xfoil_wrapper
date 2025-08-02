@@ -136,8 +136,6 @@ class AirfoilFunctions(BaseModel):
         '''
 
         outputs_dir = _Paths.outputs()
-        print(outputs_dir)
-        print(file_name)
         full_path = outputs_dir / file_name
 
         if os.path.exists(full_path):

@@ -21,15 +21,17 @@ class XfoilWrapper:
     def start_xfoil(self) -> None:
         """Starts Xfoil as a persistent process."""
         if self.process is None or self.process.poll() is not None:
+            xfoil_path = PATHS.wrapper() / 'xfoil.exe'
             self.process = sp.Popen(
-                ['xfoil.exe'],
+                [xfoil_path],
                 stdin=sp.PIPE,
-                stdout=sp.PIPE,
+                # stdout=sp.PIPE,
                 stderr=sp.DEVNULL,
-                shell=True,
                 text=True,
                 creationflags=0,
             )
+
+        sleep(0.05)
 
         return
 
@@ -39,12 +41,12 @@ class XfoilWrapper:
         outputs_path = PATHS.outputs()
         if self.process and self.process.poll() is None:  # Ensure XFOIL is running
             if self.print_commands:
-                print(f"Sending command: {command}")  # Debugging
+                print(f"\nSending command: {command}")  # Debugging
             with open(outputs_path / "xfoil_commands.log", "a") as log_file:
                 log_file.write(command + "\n")  # Log the command
             self.process.stdin.write(command + "\n")
             self.process.stdin.flush()
-            sleep(0.15)
+
         else:
             raise RuntimeError("XFOIL process has unexpectedly terminated.")
 
@@ -70,13 +72,11 @@ class XfoilWrapper:
 
     def load_airfoil(self) -> None:
         """Loads an airfoil `.dat` file into XFOIL."""
-        wrapper_dir = PATHS.wrapper()
-        relative_airfoil_path = os.path.relpath(self.wrapper_airfoil_file, wrapper_dir)
+        relative_airfoil_path = os.path.relpath(self.wrapper_airfoil_file, PATHS.ROOT_DIR)
+        # TODO: Convert this to numpy readtext
         dat_file_info = pd.read_csv(self.wrapper_airfoil_file, skiprows=[0], delimiter='\t', skipinitialspace=True, header=None).iloc[:, 1:]
-
         # Load the airfoil
-        self.send_command(f"load {relative_airfoil_path}")
-
+        self.send_command(f"LOAD {relative_airfoil_path}")
         # If airfoil has more than 150 points, apply paneling
         if len(dat_file_info) > 150:
             self.send_command("PANE")
