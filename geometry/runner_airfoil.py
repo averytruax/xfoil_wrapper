@@ -14,7 +14,7 @@ class RunAirfoil(BaseModel):
 
         airfoil = cls()
 
-        airfoil.tag = "test_airfoil"
+        airfoil.tag = "reflex"
 
         airfoil.airfoil_cst_coefficients = {
             'upper' : np.array([0.102220,0.15578,0.099851,0.069602,0.4,-0.15,1e-06,0.35]),

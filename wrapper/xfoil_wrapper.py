@@ -8,6 +8,7 @@ import os
 PATHS = _Paths()
 
 class XfoilWrapper:
+    
     def __init__(self , print_comms: bool = False):
         self.print_commands = print_comms
         self.output_file = PATHS.outputs() / "xfoil_output.txt"
