@@ -1,8 +1,8 @@
 # Import Scripts to be used
-from wrapper.std_atm import std_atm
+from helpers.std_atm import std_atm
 from wrapper.xfoil_wrapper import XfoilWrapper
 from geometry.geometric_functions import AirfoilFunctions
-from geometry.runner_airfoil import RunnerAirfoil
+from geometry.runner_airfoil import RunAirfoil
 from math import sqrt
 
 
@@ -35,7 +35,7 @@ if __name__ == "__main__":
 
     obj = AirfoilFunctions()
 
-    airfoil = RunnerAirfoil.test_airfoil()
+    airfoil = RunAirfoil.test_airfoil()
 
 
     obj.create_and_write_airfoil_file(airfoil)

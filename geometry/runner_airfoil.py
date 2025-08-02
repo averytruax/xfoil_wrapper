@@ -2,7 +2,7 @@ import numpy as np
 from pydantic import BaseModel
 
 """Script containing the geometric information about the airfoils and the optimization parameters"""
-class RunnerAirfoil(BaseModel):
+class RunAirfoil(BaseModel):
 
     tag: str = 'base'
     airfoil_cst_coefficients: dict = None
@@ -10,7 +10,7 @@ class RunnerAirfoil(BaseModel):
     optimization_parameters: dict = None
 
     @classmethod
-    def test_airfoil(cls):
+    def reflex(cls):
 
         airfoil = cls()
 
@@ -24,15 +24,6 @@ class RunnerAirfoil(BaseModel):
         airfoil.settings = {
             'yte'       : 0.0,
             'type'      : 'round',
-        }
-
-        # TODO: move these somewhere else in the repo
-        optimization_parameters = {
-            'thickness_chord_lim' : 0.12,
-            'geometric_iteration_lim' : 15.0,
-            'target_cl_max' : 1.2,
-            'target_cd0_' : 0.02,
-            'target_cm0' : 0.01,
         }
 
         return airfoil

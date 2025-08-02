@@ -3,7 +3,7 @@ from typing import Literal, Optional
 from scipy.special import factorial
 from pydantic import BaseModel
 import os
-from geometry.runner_airfoil import RunnerAirfoil
+from geometry.runner_airfoil import RunAirfoil
 from helpers.paths import _Paths
 
 
@@ -43,7 +43,7 @@ class AirfoilFunctions(BaseModel):
 
     def create_and_write_airfoil_file(
         self,
-        airfoil: RunnerAirfoil,
+        airfoil: RunAirfoil,
         file_name: Optional[str] = 'wrapper_airfoil.dat',
         ) -> None:
 
