@@ -18,7 +18,8 @@ class _Paths:
     def wrapper(cls) -> Path:
         return cls.ROOT_DIR / "wrapper"
 
-
+# Global instance for paths
+PATHS = _Paths()
 
 if __name__ == "__main__":
 

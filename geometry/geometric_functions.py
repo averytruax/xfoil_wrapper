@@ -4,7 +4,7 @@ from scipy.special import factorial
 from pydantic import BaseModel
 import os
 from geometry.runner_airfoil import RunAirfoil
-from helpers.paths import _Paths
+from helpers.paths import PATHS
 
 
 class AirfoilFunctions(BaseModel):
@@ -135,7 +135,7 @@ class AirfoilFunctions(BaseModel):
             None
         '''
 
-        outputs_dir = _Paths.outputs()
+        outputs_dir = PATHS.outputs()
         full_path = outputs_dir / file_name
 
         if os.path.exists(full_path):
