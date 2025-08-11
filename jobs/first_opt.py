@@ -1,8 +1,10 @@
 from helpers.std_atm import Atmosphere
-from wrapper.xfoil_wrapper import XfoilWrapper
-from wrapper.data_classes import OperatingConditions
+from helpers.file_readers import FileReaders
+from wrapper.xfoil_wrapper import XfoilOperator
+from wrapper.data_classes import OperatingConditions, OptimizationResults
 from geometry.geometric_functions import AirfoilFunctions
 from geometry.runner_airfoil import RunAirfoil
+from wrapper.xfoil_wrapper import StandardOperations
 import numpy as np
 from pydantic import BaseModel
 
@@ -10,18 +12,22 @@ from pydantic import BaseModel
 class OptimizationParms(BaseModel):
     max_cst_delta: float = 0.05
     max_tc_ratio: float = 0.12
-    alpha: float = 3.5 # degrees
 
 class _Settings(BaseModel):
 
     # Data Classes
     run_airfoil: RunAirfoil = RunAirfoil.reflex()
     optimization_parameters: OptimizationParms = OptimizationParms()
-    operating_conditions: OperatingConditions = OperatingConditions()
+
+    # Operating Conditions for the optimization
+    mach: float = 0.4
+    altitude: float = 10 # altitude in km
+    alpha: float = 3.5 # degrees
+
 
 class _Outputs(BaseModel):
 
-    results: dict = {}
+    results: OptimizationResults = OptimizationResults()
 
 class OptimizeLD:
 
@@ -37,17 +43,20 @@ class OptimizeLD:
         settings = self.settings
         outputs = self.outputs
 
-        run = XfoilWrapper(print_comms=True)
+        run = StandardOperations(print_comms=True)
+        # TODO: have this be done in one function call
+        run.operating_conditions.mach = settings.mach
+        run.operating_conditions.altitude = settings.altitude
+        run.operating_conditions.alpha = settings.alpha
+        atm: Atmosphere = Atmosphere.evaluate(run.operating_conditions)
+        run.operating_conditions.reynolds_number = atm.reynolds_number
+
         airfoil = settings.run_airfoil
 
         # Write the airfoil CST to a dat file for XFOIL to read
         af_functions = AirfoilFunctions()
         af_functions.create_and_write_airfoil_file(airfoil)
 
-        settings.operating_conditions.mach = 0.4
-        settings.operating_conditions.altitude = 10
-
-        atm: Atmosphere = Atmosphere.evaluate(settings.operating_conditions)
 
         # Set up the constraints for the optimization
         max_delta = settings.optimization_parameters.max_cst_delta
@@ -67,7 +76,19 @@ class OptimizeLD:
             airfoil.cst_coefficients['lower'] - max_delta
         )
 
-        
+        run.setup_run_state()
+        run.get_LD()
 
-        run.test_this_thang(atm.reynolds_number, atm.mach)
+        df = FileReaders().read_aero_file()
+
+        LD = df['CL'].iloc[0] / df['CD'].iloc[0]
+
+        print(LD)
+
+
+
+
+
+
+
 

@@ -1,29 +1,44 @@
 import subprocess as sp
 import pandas as pd
 from time import sleep
-from pathlib import Path
-from helpers.paths import _Paths
+from helpers.paths import PATHS
+from wrapper.data_classes import OperatingConditions
 import os
-
-PATHS = _Paths()
 
 # TODO: Have the 'base' functions like start, send_command, load, etc. in their own class
 # This would neccesitate anothrer class that builds standard processes off of the base methods
 
-class XfoilWrapper:
+class XfoilOperator:
 
     def __init__(self , print_comms: bool = False):
+
+        # Options
         self.print_commands = print_comms
+
+        # Paths
+
         self.output_file = PATHS.outputs() / "xfoil_output.txt"
         self.wrapper_airfoil_file = PATHS.outputs() / 'wrapper_airfoil.dat'
-        self.process = None  # Persistent Xfoil process
+        self.relative_airfoil_path = os.path.relpath(self.wrapper_airfoil_file, PATHS.ROOT_DIR)
+        self.relative_outut_path = os.path.relpath(self.output_file, PATHS.ROOT_DIR)
+
+        # Process states
+        self.process = None
         self.is_pacc = False
         self.first_pacc = True
         self.operating_conds_set = False
         self.first_iter_done = False
 
+        # Operating conditions
+        self.operating_conditions: OperatingConditions = OperatingConditions()
+
+
     def start_xfoil(self) -> None:
         """Starts Xfoil as a persistent process."""
+
+        # delete log file first
+        self.delete_log_file()
+
         if self.process is None or self.process.poll() is not None:
             xfoil_path = PATHS.wrapper() / 'xfoil.exe'
             self.process = sp.Popen(
@@ -89,7 +104,6 @@ class XfoilWrapper:
             self.send_command('v\n')
         if not self.operating_conds_set:
             self.send_command(f"v {Re}")  # Set Reynolds number
-            # self.send_command(f"m {M}")
             self.send_command("iter 1000")   # Set iteration limit
         self.operating_conds_set = True
 
@@ -97,18 +111,17 @@ class XfoilWrapper:
 
     def set_pacc(self) -> None:
         """Enables polar accumulation output to a file."""
-        if os.path.exists('outputs/'+self.output_file) and self.first_pacc:
+        if os.path.exists('outputs' / self.output_file) and self.first_pacc:
             if self.print_commands:
                 print('removing old pacc file')
-            os.remove('outputs/'+self.output_file)
-            self.first_pacc = False  # Only remove the file on the first call
-            sleep(0.05)
+            os.remove('outputs' / self.output_file)
+        self.first_pacc = False  # Only remove the file on the first call
 
         if self.first_iter_done:
-            self.send_command(f"PACC\n{'outputs/'+self.output_file}\ny\n")
+            self.send_command(f"PACC\n{self.relative_outut_path}\ny\n")
             self.is_pacc = True
         else:
-            self.send_command(f"PACC\n{'outputs/'+self.output_file}\n")
+            self.send_command(f"PACC\n{self.relative_outut_path}\n")
             self.is_pacc = True
 
         return
@@ -123,7 +136,21 @@ class XfoilWrapper:
     def quit_xfoil(self) -> None:
         """Sends command to quit Xfoil"""
         self.send_command("\n\n\nquit")
+        # reset process state
         self.process = None
+        self.is_pacc = False
+        self.first_pacc = True
+        self.operating_conds_set = False
+        self.first_iter_done = False
+        # This pause allows for file writing to complete for some stupid reason
+        sleep(0.05)
+        return
+
+    def delete_log_file(self):
+        """Deletes the log file if it exists."""
+        log_file_path = PATHS.outputs() / "xfoil_commands.log"
+        if os.path.exists(log_file_path):
+            os.remove(log_file_path)
         return
 
     def get_airfoil_polar_data(self, Re: float, M: float):
@@ -144,62 +171,6 @@ class XfoilWrapper:
             'xtr_top': None,
             'xtr_bot': None
         }
-
-        """
-        #=================================================================
-        # This block of code was the old way of determining the cl_max
-        #=================================================================
-        # while not cl_max_found:
-        #     self.load_airfoil()
-        #     self.set_oper(Re,M)
-        #     self.set_pacc()
-        #     # sleep(0.1)
-        #     self.send_command(f"A {alpha}")  # Set angle of attack
-        #     sleep(0.2)
-        #     self.unset_pacc()
-        #     self.quit_xfoil()
-        #     '''
-        #     This block of code was the old way of getting the program to sleep when XFoil had finished running.
-        #     # sleep(0.75)
-        #     # with open(self.output_file, 'r') as file:
-        #     #     output = file.readlines()
-        #     # line_info = output[-1].split()
-        #     # if float(line_info[0]) == alpha_old:
-        #     #     raise ValueError("XFOIL did not converge or the file was not updated. Check the following:\n The iteration limit in the set_oper method.\n",
-        #     #                      "The time that the program sleeps after XFOIL is quit.")
-        #     '''
-        #     file_updated = False
-        #     time_slept = 0
-        #     if not self.first_iter_done:
-        #         sleep(0.2)
-        #     while not file_updated:
-        #         with open(self.output_file, 'r') as file:
-        #             output = file.readlines()
-        #             line_info = output[-1].split()
-        #             if float(line_info[0]) == alpha_old and time_slept > 1:
-        #                 raise ValueError("XFOIL did not converge or the file was not updated. Check the following:",
-        #                     "The iteration limit in the set_oper method.",
-        #                     "The time that the program sleeps after XFOIL is quit.")
-        #             elif float(line_info[0]) == alpha_old:
-        #                 sleep(0.1)
-        #                 time_slept += 0.1
-        #             else:
-        #                 file_updated = True
-
-        #     polar_data['alpha'].append(alpha)
-        #     polar_data['cl'].append(float(line_info[1]))
-        #     polar_data['cd'].append(float(line_info[2]))
-        #     polar_data['cm'].append(float(line_info[4]))
-        #     if polar_data['cl'][-1] < cl_old and cl_old > 0 and alpha > 7:
-        #         cl_max_found = True
-        #         polar_data['xtr_top'] = float(line_info[4])
-        #         polar_data['xtr_bot'] = float(line_info[5])
-        #     cl_old = polar_data['cl'][-1]
-        #     alpha_old = alpha
-        #     alpha += ainc
-        #     self.first_iter_done = True
-        #=================================================================
-        """
 
         cl_max_found = False
         cl_peak = -float('inf')
@@ -278,24 +249,57 @@ class XfoilWrapper:
         return polar_data
 
 
-    def test_this_thang(self, Re , M):
-        alpha = 0
-        alpha_step = 1
-        ainc = alpha_step/20
+class StandardOperations(XfoilOperator):
+    "Class for compacting standard processes into one method"
+
+    def __init__(self, print_comms: bool = False):
+        super().__init__(print_comms=print_comms)
+        return
+
+    def setup_run_state(self):
+        """
+        Runs the following process:
+            -Load airfoil and repanels if needed
+            -Sets the operating conditions for the run
+            -Sets polar accumulation mode
+
+        """
+
+        conditions = self.operating_conditions
+
         self.start_xfoil()
         self.load_airfoil()
-        # self.disable_graphics()
-        # self.set_oper(Re,M)
-        # self.send_command("AS")  # Set angle of attack
-        # self.send_command(f'{alpha}')
-        # self.send_command(f'{alpha + alpha_step - ainc}')
-        # self.send_command(f'{ainc}')
-        # sleep(5)
+        self.disable_graphics()
+        self.set_oper(conditions.reynolds_number, conditions.mach)
+        self.set_pacc()
 
-        # output , err= self.read_output()
-        # # print(output)
-        # self.load_airfoil()
-        # output , err = self.read_output()
-        # print(output)
+        return
+
+    def run_condition(self):
+
+        process = self.process
+
+        process.send_command()
+
+
+    def get_LD(self) -> None:
+        """
+        Gets the lift to drag ratio of the input ariroil at the given operating conditions
+
+        Assumtions:
+            - Xfoil has been started and the airfoil has been loaded
+            - The operating conditions have been set in Oper menu
+            - PACC has been enabled
+        """
+
+        conditions = self.operating_conditions
+
+        self.send_command(f"a {conditions.alpha}")
+        self.unset_pacc()
+        self.quit_xfoil()
+
+
+
+
 
 
