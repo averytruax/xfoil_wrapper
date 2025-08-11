@@ -6,6 +6,7 @@ from geometry.geometric_functions import AirfoilFunctions
 from geometry.runner_airfoil import RunAirfoil
 from wrapper.xfoil_wrapper import StandardOperations
 import numpy as np
+from scipy.optimize import minimize
 from pydantic import BaseModel
 
 
@@ -43,8 +44,13 @@ class OptimizeLD:
         settings = self.settings
         outputs = self.outputs
 
+
+    def get_LD(self) -> float:
+
+        settings = self.settings
+
         run = StandardOperations(print_comms=True)
-        # TODO: have this be done in one function call
+        # TODO: have this be done in one function call and move inside the objective function for the optimization.
         run.operating_conditions.mach = settings.mach
         run.operating_conditions.altitude = settings.altitude
         run.operating_conditions.alpha = settings.alpha
@@ -76,17 +82,55 @@ class OptimizeLD:
             airfoil.cst_coefficients['lower'] - max_delta
         )
 
-        run.setup_run_state()
-        run.get_LD()
+        # Flatten all bounds together for SLSQP
+        bounds = list(zip(
+            np.concatenate([cst_top_surface_lower_lim, cst_bot_surface_lower_lim]),
+            np.concatenate([cst_top_surface_upper_lim, cst_bot_surface_upper_lim])
+        ))
 
-        df = FileReaders().read_aero_file()
+        # Initial guess = current airfoil coefficients
+        x0 = np.concatenate([
+            airfoil.cst_coefficients['upper'],
+            airfoil.cst_coefficients['lower']
+        ])
 
-        LD = df['CL'].iloc[0] / df['CD'].iloc[0]
+        # Number of upper surface coefficients
+        n_upper = len(airfoil.cst_coefficients['upper'])
 
-        print(LD)
+        def objective(params):
+            # Unpack
+            upper_coeffs = params[:n_upper]
+            lower_coeffs = params[n_upper:]
 
+            # Set these back into your airfoil object
+            airfoil.cst_coefficients['upper'] = upper_coeffs
+            airfoil.cst_coefficients['lower'] = lower_coeffs
 
+            # Run aerodynamic solver
+            run.setup_run_state()
+            run.get_LD()
 
+            # Read results
+            df = FileReaders().read_aero_file()
+            CL = df['CL'].iloc[0]
+            CD = df['CD'].iloc[0]
+            LD = CL / CD
+
+            # We want to maximize LD, so minimize -LD
+            return -LD
+
+        # Run optimizer
+        res = minimize(
+            objective,
+            x0,
+            method='SLSQP',
+            bounds=bounds,
+            options={'disp': True, 'maxiter': 50}  # adjust maxiter if needed
+        )
+
+        print("Optimal coefficients (upper):", res.x[:n_upper])
+        print("Optimal coefficients (lower):", res.x[n_upper:])
+        print("Max L/D:", -res.fun)
 
 
 
