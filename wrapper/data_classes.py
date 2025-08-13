@@ -13,5 +13,11 @@ class OperatingConditions(BaseModel):
     density: Optional[float] = np.nan  # Density of the fluid
 
 
-class OptimizationResults(BaseModel):
-    pass
+class OptimizationResults(BaseModel, arbitrary_types_allowed=True):
+    """
+    Class to hold the results of any optimization process
+    Fields may vary depending on what is being optimized
+    """
+
+    parameters: dict = {} # Dictionary to hold the parameters used in the optimization
+    residuals_list: list = [] # List of residuals from the optimization

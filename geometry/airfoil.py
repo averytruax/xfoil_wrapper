@@ -2,7 +2,7 @@ import numpy as np
 from pydantic import BaseModel
 
 """Script containing the geometric information about the airfoils and the optimization parameters"""
-class RunAirfoil(BaseModel):
+class Airfoil(BaseModel):
 
     tag: str = 'base'
     cst_coefficients: dict = None

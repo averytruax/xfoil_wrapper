@@ -44,7 +44,7 @@ class XfoilOperator:
             self.process = sp.Popen(
                 [xfoil_path],
                 stdin=sp.PIPE,
-                # stdout=sp.PIPE,
+                stdout=sp.DEVNULL,
                 stderr=sp.DEVNULL,
                 text=True,
                 creationflags=0,
@@ -133,17 +133,16 @@ class XfoilOperator:
             self.is_pacc = False
         return
 
-    def quit_xfoil(self) -> None:
+    def return_to_xfoil_start(self) -> None:
         """Sends command to quit Xfoil"""
-        self.send_command("\n\n\nquit")
+        self.send_command("\n" * 5)
         # reset process state
-        self.process = None
         self.is_pacc = False
         self.first_pacc = True
         self.operating_conds_set = False
         self.first_iter_done = False
         # This pause allows for file writing to complete for some stupid reason
-        sleep(0.05)
+        sleep(0.2)
         return
 
     def delete_log_file(self):
@@ -153,6 +152,7 @@ class XfoilOperator:
             os.remove(log_file_path)
         return
 
+    # TODO: movet this to standard operations class
     def get_airfoil_polar_data(self, Re: float, M: float):
         """Finds maximum lift coefficient (Cl_max)."""
         alpha : float = 0
@@ -189,7 +189,7 @@ class XfoilOperator:
             self.send_command(f'{ainc}')
             sleep(sleep_time)
             self.unset_pacc()
-            self.quit_xfoil()
+            self.return_to_xfoil_start()
 
             if not self.first_iter_done:
                 sleep(0.15)
@@ -295,8 +295,9 @@ class StandardOperations(XfoilOperator):
         conditions = self.operating_conditions
 
         self.send_command(f"a {conditions.alpha}")
+        sleep(1)
         self.unset_pacc()
-        self.quit_xfoil()
+        self.return_to_xfoil_start()
 
 
 
