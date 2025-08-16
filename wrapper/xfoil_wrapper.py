@@ -10,7 +10,7 @@ import os
 # TODO: Have the 'base' functions like start, send_command, load, etc. in their own class
 # This would neccesitate anothrer class that builds standard processes off of the base methods
 
-class XfoilOperator:
+class XfoilOperatorLive:
 
     def __init__(self , print_comms: bool = False, display_graphics: bool = False):
 
@@ -185,7 +185,7 @@ class XfoilOperator:
         return
 
 
-class StandardOperations(XfoilOperator):
+class StandardOperations(XfoilOperatorLive):
     "Class for compacting standard processes into one method"
 
     def __init__(self, print_comms: bool = False, display_graphics: bool = True):

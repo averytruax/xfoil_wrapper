@@ -1,6 +1,6 @@
 from helpers.std_atm import Atmosphere
 from helpers.file_readers import FileReaders
-from wrapper.xfoil_wrapper import XfoilOperator
+from wrapper.xfoil_wrapper import XfoilOperatorLive
 from wrapper.data_classes import OperatingConditions, OptimizationResults
 from geometry.geometric_functions import AirfoilFunctions
 from geometry.airfoil import Airfoil
