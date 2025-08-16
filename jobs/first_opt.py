@@ -23,9 +23,9 @@ class _Settings(BaseModel):
     optimization_parameters: OptimizationParms = OptimizationParms()
 
     # Operating Conditions for the optimization
-    mach: float = 0.4
+    mach: float = 0.3
     altitude: float = 10 # altitude in km
-    alpha: float = 3.5 # degrees
+    alpha: float = 1.5 # degrees
 
 
 class _Outputs(OptimizationResults):
@@ -55,7 +55,8 @@ class OptimizeLD:
         outputs = self.outputs
 
         # Initialize the run process and its dependencies
-        run = StandardOperations(print_comms=False)
+        run = StandardOperations(print_comms=True, display_graphics=True)
+        run.start_xfoil()
         # TODO: have this be done in one function call and move inside the objective function for the optimization.
         run.operating_conditions.mach = settings.mach
         run.operating_conditions.altitude = settings.altitude
@@ -68,8 +69,6 @@ class OptimizeLD:
 
         # Write the airfoil CST to a dat file for XFOIL to read
         af_functions = AirfoilFunctions()
-        af_functions.create_and_write_airfoil_file(airfoil)
-
 
         # Set up the constraints for the optimization
         max_delta = settings.optimization_parameters.max_cst_delta
