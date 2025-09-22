@@ -1,23 +1,27 @@
-[tool.poetry]
+[project]
 name = "xfoil-wrapper"
 version = "0.1.0"
 description = "Python wrapper for XFOIL with geometry and output utilities."
-authors = ["Your Name <you@example.com>"]
-packages = [
-    { include = "geometry" },
-    { include = "wrapper" },
-    { include = "helpers" },
-    { include = "jobs" },
+authors = [ { name = "Your Name", email = "you@example.com" } ]
+requires-python = ">=3.9"
+
+dependencies = [
+    "numpy >=1.24",
+    "scipy >=1.11",
+    "plotly >=5.0",
+    "pandas >=2.0",
+    "pydantic >=2.0",
 ]
 
-[tool.poetry.dependencies]
-python = ">=3.9"
-numpy = ">=1.24"
-scipy = ">=1.11"
-plotly = ">=5.0"
-pandas = ">=2.0"
-pydantic = ">=2.0"
+[tool.uv]
+# Example uv configuration. Adjust keys to match the uv tool's expectations if needed.
+packages = [
+    "geometry",
+    "wrapper",
+    "helpers",
+    "jobs",
+]
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["uv-core>=1.0.0"]
+build-backend = "uv.core.build"
