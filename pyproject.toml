@@ -13,15 +13,9 @@ dependencies = [
     "pydantic >=2.0",
 ]
 
-[tool.uv]
-# Example uv configuration. Adjust keys to match the uv tool's expectations if needed.
-packages = [
-    "geometry",
-    "wrapper",
-    "helpers",
-    "jobs",
-]
+[tool.setuptools.packages.find]
+include = ["geometry", "wrapper", "helpers", "jobs"]
 
 [build-system]
-requires = ["uv-core>=1.0.0"]
-build-backend = "uv.core.build"
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"

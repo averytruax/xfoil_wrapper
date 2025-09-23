@@ -193,10 +193,16 @@ class XfoilOperatorLive(XfoilOperator):
 class XfoilOperatorText(XfoilOperator):
 
     def __init__(self, print_comms = False, display_graphics = False):
+
         super().__init__(print_comms, display_graphics)
 
-    def start_xfoil(self) -> None:
-        """Starts Xfoil as a persistent process."""
+        # Add the file that will be written to:
+        self.input_commands: str = ""
+
+
+
+    def run_xfoil(self) -> None:
+        """Builds a text file based on user input, then runs XFOIL as a process. Then post processes the output"""
 
         # delete log file first
         self.clear_outputs_dir()
@@ -206,53 +212,51 @@ class XfoilOperatorText(XfoilOperator):
         else:
             creation_flag = 0
 
-        if self.process is None or self.process.poll() is not None:
+        if self.process is None or self.process.returncode != 0:
             xfoil_path = PATHS.wrapper() / 'xfoil.exe'
             self.process = sp.run(
                 [xfoil_path],
-                stdin=sp.PIPE,
-                stdout=None,
-                stderr=None,
-                text=True,
-                creationflags=creation_flag,
+                input = self.input_commands,
+                text = True,
+                creationflags=creation_flag
             )
 
-        sleep(0.05)
+        # Check if the process executed succesfully
+        if self.process.returncode != 0:
+            raise RuntimeError("XFOIL process did not run as expected.")
+
 
         return
 
-    def send_command(self, command: str):
-        """Sends a command to XFOIL while ensuring the process is still alive."""
+    def write_command(self, command: str):
+        """Writes a command to the input file"""
 
-        outputs_path = PATHS.outputs()
-        if self.process and self.process.poll() is None:  # Ensure XFOIL is running
-            if self.print_commands:
-                print(f"\nSending command: {command}")  # Debugging
-            with open(outputs_path / "xfoil_commands.log", "a") as log_file:
-                log_file.write(command + "\n")  # Log the command
-            self.process.stdin.write(command + "\n")
-            self.process.stdin.flush()
 
+
+        # Append the command to the input command file:
+        if command.endswith('\n'):
+            self.input_commands += command
         else:
-            raise RuntimeError("XFOIL process has unexpectedly terminated.")
+            self. input_commands += command + "\n"
+
+        if self.print_commands:
+            if command.endswith('\n'):
+                print(f"\nWriting command: {command}\\n")
+            else:
+                print(f"\nWriting command: {command}")  # Debugging
 
         return
 
     def disable_graphics(self) -> None:
         """Sends a command to disable the graphics output of xfoil"""
         if self.graphics_on:
-            self.send_command('PLOP')
-            self.send_command('G\n')
+            self.write_command('PLOP')
+            self.write_command('G')
+            self.write_command('\n')
             self.graphics_on = False
             return
         else:
             return
-
-    def read_output(self):
-        """Stops the subprocess and reads the output"""
-        output, stderr = self.process.communicate()
-        self.process = None
-        return output , stderr
 
     def load_airfoil(self) -> None:
         """Loads an airfoil `.dat` file into XFOIL."""
@@ -260,10 +264,10 @@ class XfoilOperatorText(XfoilOperator):
         # TODO: Convert this to numpy readtext
         dat_file_info = pd.read_csv(self.wrapper_airfoil_file, skiprows=[0], delimiter='\t', skipinitialspace=True, header=None).iloc[:, 1:]
         # Load the airfoil
-        self.send_command(f"LOAD {relative_airfoil_path}")
+        self.write_command(f"LOAD {relative_airfoil_path}")
         # If airfoil has more than 150 points, apply paneling
         if len(dat_file_info) > 150:
-            self.send_command("PANE")
+            self.write_command("PANE")
 
         return
 
@@ -278,22 +282,20 @@ class XfoilOperatorText(XfoilOperator):
                 return
             else:
                 if Re != np.nan:
-                    self.send_command(f"v {Re}")  # Set Reynolds number
+                    self.write_command(f"v {Re}")  # Set Reynolds number
                 else:
                     print("Operating conditions not set, using inviscid analysis")
 
-                self.send_command("iter 1000")
+                self.write_command("iter 1000")
                 self.operating_conds_set = True
         else:
-            self.send_command("OPER")
-            self.send_command("iter 1000")   # Set iteration limit
+            self.write_command("OPER")
+            self.write_command("iter 1000")   # Set iteration limit
             if not self.operating_conds_set:
-                self.send_command('v\n')
                 if Re != np.nan:
-                    self.send_command(f"v {Re}")  # Set Reynolds number
+                    self.write_command(f"v {Re}")  # Set Reynolds number
                 else:
                     print("Operating conditions not set, using inviscid analysis")
-                self.send_command("iter 1000")   # Set iteration limit
                 self.operating_conds_set = True
 
         return
@@ -307,9 +309,11 @@ class XfoilOperatorText(XfoilOperator):
         if os.path.exists(output_file):
             if self.print_commands:
                 print('removing old pacc file')
-            os.remove(self.output_file)
+            os.remove(output_file)
 
-        self.send_command(f"PACC\n{relative_output_path}\n")
+        self.write_command("PACC")
+        self.write_command(str(relative_output_path))
+        self.write_command('\n')
         self.is_pacc = True
 
         self.output_file_number += 1
@@ -319,14 +323,17 @@ class XfoilOperatorText(XfoilOperator):
     def unset_pacc(self) -> None:
         """Disables polar accumulation."""
         if self.is_pacc:
-            self.send_command("PACC")
+            self.write_command("PACC")
             self.is_pacc = False
         return
 
     def return_to_xfoil_start(self) -> None:
         """Sends command to quit Xfoil"""
-        self.send_command("\n" * 5)
-        self.send_command("QUIT")
+        self.write_command("\n" * 5)
+        return
+
+    def quit_xfoil(self) -> None:
+        self.write_command("QUIT")
         # reset process state
         self.is_pacc = False
         self.is_oper = False
@@ -347,7 +354,7 @@ class XfoilOperatorText(XfoilOperator):
     pass
 
 
-class StandardOperations(XfoilOperator):
+class StandardOperations(XfoilOperatorText):
     "Class for compacting standard processes into one method"
 
     def __init__(self, print_comms: bool = False, display_graphics: bool = True):
@@ -391,7 +398,7 @@ class StandardOperations(XfoilOperator):
 
         conditions = self.operating_conditions
 
-        self.send_command(f"as 0 {conditions.alpha} 0.5")
+        self.write_command(f"as 0 {conditions.alpha} 0.5")
         self.unset_pacc()
         self.return_to_xfoil_start()
 
@@ -400,3 +407,13 @@ class StandardOperations(XfoilOperator):
 
 
 
+if __name__ == "__main__":
+
+    process = StandardOperations(print_comms=True, display_graphics=False)
+    process.operating_conditions.reynolds_number = 5e5
+    process.operating_conditions.mach = 0.3
+    process.operating_conditions.alpha = 3.0
+    process.setup_run_state()
+    process.get_LD()
+    process.quit_xfoil()
+    process.run_xfoil()
