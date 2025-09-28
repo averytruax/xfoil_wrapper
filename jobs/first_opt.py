@@ -25,10 +25,12 @@ class _Settings(BaseModel):
     # Operating Conditions for the optimization
     mach: float = 0.3
     altitude: float = 10 # altitude in km
-    alpha: float = 1.5 # degrees
+    alpha: float = 3.0 # degrees
 
 
 class _Outputs(OptimizationResults):
+    residuals_list: list[float] = []
+    objectives_list: list[float] = []
     pass
 
 class OptimizeLD:
@@ -55,8 +57,7 @@ class OptimizeLD:
         outputs = self.outputs
 
         # Initialize the run process and its dependencies
-        run = StandardOperations(print_comms=True, display_graphics=True)
-        run.start_xfoil()
+        run = StandardOperations(print_comms=False, display_graphics=False)
         # TODO: have this be done in one function call and move inside the objective function for the optimization.
         run.operating_conditions.mach = settings.mach
         run.operating_conditions.altitude = settings.altitude
@@ -110,6 +111,9 @@ class OptimizeLD:
         }
 
         def objective(params):
+            # Count function evaluations
+            objective.evals += 1
+            print(f"Objective evaluation: {objective.evals}: \t")
             # Unpack
             upper_coeffs = params[:n_upper]
             lower_coeffs = params[n_upper:]
@@ -125,29 +129,35 @@ class OptimizeLD:
             af_functions.create_and_write_airfoil_file(airfoil)
 
             # Run aerodynamic solver
-            run.setup_run_state()
             run.get_LD()
 
             # Read results
-            df = FileReaders().read_aero_file()
-            CL = df['CL'].iloc[0]
-            CD = df['CD'].iloc[0]
+            df = FileReaders().read_aero_file(run.output_file_number)
+            CL = df['CL'].iloc[-1]
+            CD = df['CD'].iloc[-1]
             LD = CL / CD
 
             # We want to maximize LD, so minimize -LD
+            print(f"Evaluated L/D: {np.abs(LD):.3f}\n")
+            outputs.objectives_list.append(np.abs(LD))
             return -LD
 
         # Run optimizer
+        # initialize evaluation counter on the function object
+        objective.evals = 0
+
+        # TODO: add penalty for a failed XFOIL run
         res = minimize(
             objective,
             x0,
             method='SLSQP',
             bounds=bounds,
+            tol=1e-5,
             options={
                 'disp': True,
                 'iprint': 2,
                 'maxiter': 50,
-                'eps': settings.optimization_parameters.max_cst_delta * 0.75
+                'eps': settings.optimization_parameters.max_cst_delta * 0.02
             }  # adjust maxiter if needed
         )
 
@@ -162,8 +172,12 @@ class OptimizeLD:
         airfoil.cst_coefficients['upper'] = upper_coeffs
         airfoil.cst_coefficients['lower'] = lower_coeffs
 
+        print("Initial coefficients (upper):", x0[:n_upper])
         print("Optimal coefficients (upper):", res.x[:n_upper])
+        print("Initial coefficients (upper):", x0[n_upper:])
         print("Optimal coefficients (lower):", res.x[n_upper:])
+        print("Difference (upper):", res.x[:n_upper] - x0[:n_upper])
+        print("Difference (lower):", res.x[n_upper:] - x0[n_upper:])
         print("Max L/D:", -res.fun)
 
 
@@ -171,9 +185,7 @@ class OptimizeLD:
 
         plotter = OptimizationResultsPlotter(results=self.outputs)
 
-        fig = plotter.plot_results()
-
-        fig.show()
+        plotter.generate_all_plots()
 
 
 
