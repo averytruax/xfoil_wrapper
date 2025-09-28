@@ -14,8 +14,24 @@ class OptimizationResultsPlotter(BaseModel, arbitrary_types_allowed=True):
     Class to plot the results of an optimization process
     """
     results: Optional[OptimizationResults] = None
+                                                             plots: list[go.Figure] = []
 
-    def plot_results(self) -> go.Figure:
+    # TODO: Add plots for airfoil shapes at each iteration
+    def generate_all_plots(self) -> None:
+
+        residuals = self.plot_residuals()
+        self.plots.append(residuals)
+        objective = self.plot_objective()
+        self.plots.append(objective)
+
+        for plot in self.plots:
+            plot.show()
+
+
+
+
+
+    def plot_residuals(self) -> go.Figure:
         """
         Plot the optimization results
         :param results: List of tuples containing the optimization results
@@ -45,6 +61,31 @@ class OptimizationResultsPlotter(BaseModel, arbitrary_types_allowed=True):
             width=800,
             xaxis_title='Iteration',
             yaxis_title='Coefficient Value',
+            showlegend=True)
+
+        return fig
+
+    def plot_objective(self) -> go.Figure:
+        """Plots the history of the objective function value over all the iterations"""
+
+        fig = go.Figure()
+
+        fig.add_trace(
+            go.Scatter(
+                x=np.arange(len(self.results.objectives_list)),
+                y=self.results.objectives_list,
+                mode='lines+markers',
+                name='Objective Value',
+                line=dict(color=colors.qualitative.Plotly[0])
+            )
+        )
+
+        fig.update_layout(
+            title='Objective Results',
+            height=1200,
+            width=800,
+            xaxis_title='Iteration',
+            yaxis_title='Objective Value',
             showlegend=True)
 
         return fig
