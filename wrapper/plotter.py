@@ -14,7 +14,7 @@ class OptimizationResultsPlotter(BaseModel, arbitrary_types_allowed=True):
     Class to plot the results of an optimization process
     """
     results: Optional[OptimizationResults] = None
-                                                             plots: list[go.Figure] = []
+    plots: list[go.Figure] = []
 
     # TODO: Add plots for airfoil shapes at each iteration
     def generate_all_plots(self) -> None:
