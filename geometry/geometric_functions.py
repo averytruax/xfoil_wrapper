@@ -16,30 +16,6 @@ class AirfoilFunctions(BaseModel):
     https://arc.aiaa.org/doi/10.2514/6.2007-62
     """
 
-    # Define Attributes of the class -----------------------------------------------
-
-    # round will almost always be used for subsonic / transonic flow
-    airfoil_type: Literal['round', 'elliptic', 'biconvex', 'sears_haack',
-            'low_drag', 'cone_wedge', 'rectangle_duct'] = 'round'
-
-    # Inherant to an airfoil as described in Kulfan
-    airfoil_type_coefficients: tuple[float, float] = {
-        'round': (0.5, 1),
-        'elliptic': (0.5, 0.5),
-        'biconvex': (1, 1),
-        'sears_haack': (0.75, 0.75),
-        'low_drag': (0.75, 0.25),
-        'cone_wedge': (1, 0.001),
-        'rectangle_duct': (0.001, 0.001),
-    }[airfoil_type]
-
-    n1: float = airfoil_type_coefficients[0]
-    n2: float = airfoil_type_coefficients[1]
-
-    # Normally 0.0, except for very specific cases
-    yte: float = 0.0
-
-    # ------------------------------------------------------------------------------
 
     def create_and_write_airfoil_file(
         self,
@@ -47,16 +23,9 @@ class AirfoilFunctions(BaseModel):
         file_name: Optional[str] = 'wrapper_airfoil.dat',
         ) -> None:
 
-
-        # unpack
-        upper_cst = airfoil.cst_coefficients["upper"]
-        lower_cst = airfoil.cst_coefficients["lower"]
-        yte = airfoil.settings['yte']
-        af_type = airfoil.settings['type']
-
         # Create upper coords
-        upper_coords = self.cst_xy(upper_cst,yte,af_type)
-        lower_coords = self.cst_xy(lower_cst,yte,af_type)
+        upper_coords = self.cst_xy(airfoil,'upper')
+        lower_coords = self.cst_xy(airfoil,'lower')
 
         self.write_dat_file(upper_coords,lower_coords,file_name)
 
@@ -64,10 +33,8 @@ class AirfoilFunctions(BaseModel):
 
     def cst_xy(
         self,
-        cst: list,
-        yte: float,
-        airfoil_type: Literal['round', 'elliptic', 'biconvex', 'sears_haack',
-            'low_drag', 'cone_wedge', 'rectangle_duct'] = 'round',
+        airfoil: Airfoil,
+        surface: Literal['upper', 'lower'],
         num_points: int = 160
         ) -> np.array:
         """
@@ -83,21 +50,13 @@ class AirfoilFunctions(BaseModel):
         Returns:
             xy_array (numpy.ndarray): Array containing x and y coordinates for the airfoil surface
         """
-        cst = np.asarray(cst).flatten()
-
-        n_dict: dict = {
-            'round': (0.5, 1),
-            'elliptic': (0.5, 0.5),
-            'biconvex': (1, 1),
-            'sears_haack': (0.75, 0.75),
-            'low_drag': (0.75, 0.25),
-            'cone_wedge': (1, 0.001),
-            'rectangle_duct': (0.001, 0.001),
-        }[airfoil_type]
-
-        n1, n2 = n_dict
 
 
+        cst = np.asarray(airfoil.cst_coefficients[surface]).flatten()
+
+        n1, n2 = airfoil.n1, airfoil.n2
+
+        yte = airfoil.yte
 
         # Define the order of polynomial based on number of CST coefficients
         n = len(cst)
@@ -150,9 +109,11 @@ class AirfoilFunctions(BaseModel):
 
     def dat_file_to_cst(
         self,
+        airfoil: Airfoil,
         dat_file: str,
-        degree: int, # degree = number of coeffs
         ) -> np.ndarray:
+
+        degree = len(airfoil.cst_coefficients['upper'])
 
         coords = np.loadtxt(dat_file,skiprows=[0])
 
@@ -186,4 +147,4 @@ if __name__ == "__main__":
 
     obj = AirfoilFunctions()
 
-    obj.dat_file_to_cst(dat_file,6)
+    obj.dat_file_to_cst(dat_file)
