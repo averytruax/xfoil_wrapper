@@ -1,7 +1,6 @@
 from helpers.std_atm import Atmosphere
 from helpers.file_readers import FileReaders
-from wrapper.xfoil_wrapper import XfoilOperatorLive
-from wrapper.data_classes import OperatingConditions, OptimizationResults
+from wrapper.data_classes import OptimizationResults
 from geometry.geometric_functions import AirfoilFunctions
 from geometry.airfoil import Airfoil
 from copy import deepcopy
@@ -23,7 +22,7 @@ class _Settings(BaseModel):
     optimization_parameters: OptimizationParms = OptimizationParms()
 
     # Operating Conditions for the optimization
-    mach: float = 0.3
+    mach: float = 0.6
     altitude: float = 10 # altitude in km
     alpha: float = 3.0 # degrees
 
@@ -31,6 +30,7 @@ class _Settings(BaseModel):
 class _Outputs(OptimizationResults):
     residuals_list: list[float] = []
     objectives_list: list[float] = []
+    airfoils_list: list[Airfoil] = []
     pass
 
 class OptimizeLD:
@@ -125,6 +125,9 @@ class OptimizeLD:
             airfoil.cst_coefficients['upper'] = upper_coeffs
             airfoil.cst_coefficients['lower'] = lower_coeffs
 
+            # Keep track of the airfoil shapes
+            outputs.airfoils_list.append(deepcopy(airfoil))
+
             # Write the new airfoil file
             af_functions.create_and_write_airfoil_file(airfoil)
 
@@ -152,12 +155,12 @@ class OptimizeLD:
             x0,
             method='SLSQP',
             bounds=bounds,
-            tol=1e-5,
+            tol=1e-6,
             options={
                 'disp': True,
                 'iprint': 2,
                 'maxiter': 50,
-                'eps': settings.optimization_parameters.max_cst_delta * 0.02
+                'eps': settings.optimization_parameters.max_cst_delta * 0.005
             }  # adjust maxiter if needed
         )
 

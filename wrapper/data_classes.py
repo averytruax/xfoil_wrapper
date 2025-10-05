@@ -21,3 +21,4 @@ class OptimizationResults(BaseModel, arbitrary_types_allowed=True):
 
     parameters: dict = {} # Dictionary to hold the parameters used in the optimization
     residuals_list: list = [] # List of residuals from the optimization
+    airfoils_list: list = [] # List of airfoil shapes at each iteration
